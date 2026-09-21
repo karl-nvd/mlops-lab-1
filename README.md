@@ -43,3 +43,29 @@ Q7 : No, the data/ folder is not there after cloning the repository because Git 
 Q8 : Right after running git checkout 1e8af6f: Yes, I can still see food11_processed and food11_processed_mini in the data/ folder. Git only tracked the data.dvc pointer file and ignored the actual data directories via .gitignore, so switching Git branches leaves the untracked physical files on the hard drive untouched.
 
 After running dvc checkout: No, the folders disappear. Running dvc checkout forces DVC to sync the local workspace with the older data.dvc pointer file, leaving only food11_raw.
+
+# mlops-lab-2
+
+Q1 : pyproject.toml was updated to declare the new direct project dependencies: mlflow, torch, torchvision, and scikit-learn. These are the libraries the project now needs for model training and experiment tracking.
+uv.lock was updated with the exact resolved versions of those libraries and all of their transitive dependencies. This makes the environment reproducible: another person running uv sync gets the same compatible package versions.
+
+Q2 : --backend-store-uri sqlite:///mlflow.db tells MLflow where to store experiment metadata in a local SQLite database. This metadata includes experiments, run IDs, parameters, metric values, timestamps, and artifact references.  
+--default-artifact-root ./mlruns tells MLflow where to store run artifacts on disk, such as the trained model, files, plots, and other outputs.  
+Metadata is structured tracking information stored in mlflow.db; artifacts are the actual files produced by a run and stored under mlruns/.
+
+Q3 : mlflow.db and mlruns/ are generated, local experiment outputs. They change with every run, may become large, and depend on the local machine, so they should not be committed to Git. They should not be tracked by DVC either because DVC is for versioned datasets and reproducible data assets, while MLflow already manages experiment metadata, metrics, and run artifacts.
+
+Q4 : The first time mlflow.set_experiment("food11") is called, MLflow creates a new experiment named food11 because it does not already exist. It then sets food11 as the active experiment for future runs. The experiment appears in the MLflow UI, but no training run exists yet because mlflow.start_run() has not been called.
+
+Q5 : mlflow.log_param records a fixed configuration value for a run, such as learning rate, batch size, or model architecture. mlflow.log_metric records a measured result, such as loss or accuracy. A metric uses step because it can change throughout training; here, the step is the epoch number, which lets MLflow draw learning curves. Parameters are fixed for the entire run, so they do not need a step.
+
+Q6 : The run page shows the hyperparameters in Params, the loss and accuracy curves in Metrics, and the trained model in the logged model/artifact section.  
+The actual model file is stored locally under mlruns/. With this MLflow version, my model is at:
+mlruns/1/models/m-c771bc3381154c23b2478f3172e0aec4/artifacts/data/model.pth
+The surrounding artifact folder also contains MLmodel, requirements.txt, and environment files needed to describe or reproduce the model.
+
+Q7 : The learning rate 0.0001 gave the best final validation accuracy, about 0.7573. Higher validation accuracy is better for selecting among these comparable runs, but a higher value is not always proof of a better model: it may result from randomness or overfitting, so test accuracy and repeated experiments should also be considered.
+
+Q8 : The learning rate 0.0001 gave the best final validation accuracy, about 0.7573. Higher validation accuracy is better for selecting among these comparable runs, but a higher value is not always proof of a better model: it may result from randomness or overfitting, so test accuracy and repeated experiments should also be considered.
+
+Q9 : The best run is able-hound-923, with run ID e54c825900d0439592e9ff1ee19945ac, learning rate 0.0001, batch size 32, and final validation accuracy 0.7573.
