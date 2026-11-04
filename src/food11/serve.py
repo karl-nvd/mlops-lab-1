@@ -5,14 +5,15 @@ from __future__ import annotations
 import io
 import os
 from contextlib import asynccontextmanager
+from typing import Annotated
 
-import mlflow
 import numpy as np
 import torch
 from fastapi import FastAPI, File, HTTPException, UploadFile
 from PIL import Image, UnidentifiedImageError
 from torchvision.models import ResNet18_Weights
 
+import mlflow
 
 MODEL_URI = "models:/food11@champion"
 TRACKING_URI = os.getenv("MLFLOW_TRACKING_URI", "http://127.0.0.1:5000")
@@ -33,17 +34,23 @@ CATEGORIES = (
 )
 
 TRANSFORM = ResNet18_Weights.DEFAULT.transforms()
+model = None
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     """Load the registered model once when the API starts."""
+    global model
+    if os.environ.get("SKIP_MODEL"):
+        model = None
+        yield
+        return
     mlflow.set_tracking_uri(TRACKING_URI)
 
     # This project created and controls the trusted pickle-based Lab 2 model.
     # MLflow requires an explicit opt-in before loading that serialization format.
     os.environ.setdefault("MLFLOW_ALLOW_PICKLE_DESERIALIZATION", "true")
-    app.state.model = mlflow.pyfunc.load_model(MODEL_URI)
+    model = mlflow.pyfunc.load_model(MODEL_URI)
     yield
 
 
@@ -57,8 +64,10 @@ def health() -> dict[str, str]:
 
 
 @app.post("/predict")
-async def predict(file: UploadFile = File(...)) -> dict[str, str | float]:
+async def predict(file: Annotated[UploadFile, File()]) -> dict[str, str | float]:
     """Predict a Food-11 category from an uploaded image."""
+    if model is None:
+        raise HTTPException(status_code=503, detail="Model is not loaded.")
     try:
         image_bytes = await file.read()
         image = Image.open(io.BytesIO(image_bytes)).convert("RGB")
@@ -66,7 +75,7 @@ async def predict(file: UploadFile = File(...)) -> dict[str, str | float]:
         raise HTTPException(status_code=400, detail="The uploaded file is not a valid image.") from exc
 
     batch = TRANSFORM(image).unsqueeze(0).numpy()
-    logits = np.asarray(app.state.model.predict(batch))
+    logits = np.asarray(model.predict(batch))
     probabilities = torch.softmax(torch.from_numpy(logits), dim=1)[0]
     confidence, class_index = torch.max(probabilities, dim=0)
 

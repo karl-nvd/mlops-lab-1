@@ -5,13 +5,13 @@ from __future__ import annotations
 import argparse
 from pathlib import Path
 
-import mlflow
 import mlflow.pytorch
 import torch
 from torch import nn, optim
 from torch.utils.data import DataLoader
 from torchvision import datasets, models
 
+import mlflow
 
 TRACKING_URI = "http://127.0.0.1:5000"
 EXPERIMENT_NAME = "food11"

@@ -1,5 +1,5 @@
-import os
 from pathlib import Path
+
 from PIL import Image
 
 # Define paths
@@ -23,6 +23,20 @@ CATEGORIES = {
 }
 
 SPLITS = ["training", "validation", "evaluation"]
+CLASSES = list(CATEGORIES.values())
+
+
+def category_from_filename(filename: str) -> str:
+    """Return the Food-11 category encoded in a filename."""
+    category_id = int(Path(filename).name.split("_")[0])
+    if not 0 <= category_id < len(CLASSES):
+        raise ValueError(f"Invalid Food-11 category: {category_id}")
+    return CLASSES[category_id]
+
+
+def resize_image(img: Image.Image, size: int = 128) -> Image.Image:
+    """Return an RGB image resized to size by size pixels."""
+    return img.convert("RGB").resize((size, size))
 
 
 def process_images():
@@ -35,14 +49,14 @@ def process_images():
         print(f"Processing split: {split}...")
 
         # Track counts per category for the mini dataset
-        category_counts = {cat_id: 0 for cat_id in CATEGORIES.keys()}
+        category_counts = {cat_id: 0 for cat_id in CATEGORIES}
 
         # Iterate through images in raw split
         for img_path in split_raw_dir.glob("*.jpg"):
             try:
                 # Food-11 raw filenames follow format: <category_id>_<img_id>.jpg
                 cat_id = int(img_path.name.split("_")[0])
-                cat_name = CATEGORIES.get(cat_id, f"Category_{cat_id}")
+                cat_name = category_from_filename(img_path.name)
             except (ValueError, IndexError):
                 continue
 
@@ -53,7 +67,7 @@ def process_images():
 
             # Resize and save image (128x128)
             with Image.open(img_path) as img:
-                img_resized = img.resize((128, 128))
+                img_resized = resize_image(img)
                 img_resized.save(processed_img_path)
 
             # Copy to mini dataset if category count is <= 100
