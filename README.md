@@ -5,12 +5,14 @@ This repository follows the same Food-11 project across several MLOps labs:
 - Lab 1: Git, DVC, and dataset preparation
 - Lab 2: model training and experiment tracking with MLflow
 - Lab 3: model registration, FastAPI serving, and Docker
+- Lab 4: MLflow, inference, and a web frontend with Docker Compose
 
 ## Lab answers
 
 - [Lab 1 answers](lab%20answers/lab1.md)
 - [Lab 2 answers](lab%20answers/lab2.md)
 - [Lab 3 answers](lab%20answers/lab3.md)
+- [Lab 4 answers](lab%20answers/lab4.md)
 
 ## Main files
 
