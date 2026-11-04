@@ -20,6 +20,10 @@ I would run the validator locally before training and in the training pipeline i
 
 If `test` fails, `smoke` is skipped because it depends on it. Without `needs: test`, both jobs could run at the same time, and GitHub could build and start an image even though the tests failed.
 
+## Question 6
+
+The first successful main pipeline took about 5 minutes 11 seconds, including publishing the image. For a fair repeat comparison, the successful PR checks took about 2 minutes 4 seconds, then 2 minutes 5 seconds after an empty `ci` commit. The second run was not noticeably faster: the uv cache was already warm from earlier attempts. The dependency step took only a few seconds, while the smoke build still took about 95 seconds because it builds on a fresh runner without a shared Docker cache. Only the publishing job has the Docker cache configured in this workflow.
+
 ## Question 7
 
 A commit SHA identifies exactly which code was built. `latest` can point to a different image after every push. For example, one machine could still have yesterday's cached `latest` while another pulls today's `latest`, so they would run different code under the same tag.
@@ -27,10 +31,6 @@ A commit SHA identifies exactly which code was built. `latest` can point to a di
 ## Question 8
 
 The push job only needs read access to the code and write access to packages. Explicit permissions keep its token limited to those tasks. A compromised step with broader write access could change repository contents or releases instead of just publishing an image.
-
-## Question 11
-
-One option is a self-hosted runner that can reach the local MLflow server and runs promotion after training. Another is to use a hosted MLflow server, such as the one on DAGsHub, and call the promotion script from a workflow with the required credentials.
 
 ## Question 9
 
@@ -44,6 +44,10 @@ The champion scored `0.8139` on `1,096` test images. Its `2 * se` was `0.0235`, 
 - Version 3, trained with `lr=0.0001`, scored `0.8276`: challenger too. It improved on champion, but not enough to pass the gate.
 
 Both decisions and the accuracies were saved as version tags. Champion stayed on Version 1. These scores still need caution because the data validator found existing cross-split duplicates.
+
+## Question 11
+
+One option is a self-hosted runner that can reach the local MLflow server and runs promotion after training. Another is to use a hosted MLflow server, such as the one on DAGsHub, and call the promotion script from a workflow with the required credentials.
 
 ## Question 12
 
